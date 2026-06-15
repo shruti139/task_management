@@ -16,4 +16,13 @@ export class Logger {
       error: error instanceof Error ? { message: error.message, stack: error.stack } : error 
     }));
   }
+
+  static warn(message: string, meta?: any) {
+    console.warn(JSON.stringify({ 
+      timestamp: new Date().toISOString(), 
+      level: 'WARN', 
+      message, 
+      ...(meta && { meta })
+    }));
+  }
 }

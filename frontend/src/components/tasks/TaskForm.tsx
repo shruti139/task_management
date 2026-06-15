@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { Task, TaskStatus, TaskPriority } from '../types';
+import type { Task, TaskStatus, TaskPriority } from '../../types';
+import { Button } from '../ui/Button';
+import { Label } from '../ui/Label';
+import { Input } from '../ui/Input';
+import { Textarea } from '../ui/Textarea';
+import { Select } from '../ui/Select';
 
 interface TaskFormProps {
   task?: Task | null;
@@ -78,9 +83,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-[550px] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center">
           <h2 className="text-xl font-bold text-slate-100">{task ? 'Edit Task' : 'Create Task'}</h2>
-          <button className="text-slate-400 hover:text-slate-100 text-2xl leading-none cursor-pointer" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-100 text-2xl leading-none">
             &times;
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -92,13 +97,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             )}
 
             <div className="mb-4">
-              <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-title">
-                Title *
-              </label>
-              <input
+              <Label htmlFor="task-title" required>
+                Title
+              </Label>
+              <Input
                 id="task-title"
                 type="text"
-                className="w-full px-4 py-2.5 bg-black/20 border border-white/5 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
                 placeholder="Enter task title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -108,12 +112,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="mb-4">
-              <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-desc">
+              <Label htmlFor="task-desc">
                 Description
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 id="task-desc"
-                className="w-full px-4 py-2.5 bg-black/20 border border-white/5 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 resize-y min-h-[120px]"
                 placeholder="Enter detailed description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -123,46 +126,45 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-status">
+                <Label htmlFor="task-status">
                   Status
-                </label>
-                <select
+                </Label>
+                <Select
                   id="task-status"
-                  className="w-full px-4 py-2.5 bg-black/20 border border-white/5 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 cursor-pointer"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Completed</option>
-                </select>
+                  options={[
+                    { value: 'TODO', label: 'To Do' },
+                    { value: 'IN_PROGRESS', label: 'In Progress' },
+                    { value: 'DONE', label: 'Completed' },
+                  ]}
+                />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-priority">
+                <Label htmlFor="task-priority">
                   Priority
-                </label>
-                <select
+                </Label>
+                <Select
                   id="task-priority"
-                  className="w-full px-4 py-2.5 bg-black/20 border border-white/5 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 cursor-pointer"
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                </select>
+                  options={[
+                    { value: 'LOW', label: 'Low' },
+                    { value: 'MEDIUM', label: 'Medium' },
+                    { value: 'HIGH', label: 'High' },
+                  ]}
+                />
               </div>
             </div>
 
             <div className="mb-2 mt-4">
-              <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-duedate">
+              <Label htmlFor="task-duedate">
                 Due Date
-              </label>
-              <input
+              </Label>
+              <Input
                 id="task-duedate"
                 type="date"
-                className="w-full px-4 py-2.5 bg-black/20 border border-white/5 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />
@@ -170,15 +172,17 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           </div>
 
           <div className="px-6 py-4 border-t border-white/5 flex justify-end gap-3 bg-black/10">
-            <button type="button" className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-semibold text-slate-200 border border-white/5 transition-all cursor-pointer" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button type="submit" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold text-white shadow-md hover:shadow-indigo-500/20 transition-all cursor-pointer">
+            </Button>
+            <Button type="submit" variant="primary">
               {task ? 'Save Changes' : 'Create Task'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
     </div>
   );
 };
+
+export default TaskForm;

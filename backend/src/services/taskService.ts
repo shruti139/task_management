@@ -1,7 +1,6 @@
-import { PrismaClient, Task } from '@prisma/client';
+import type { Task } from '@prisma/client';
+import { db } from '../config/db';
 import { CreateTaskInput, UpdateTaskInput, QueryTasksInput } from '../utils/schemas';
-
-const prisma = new PrismaClient();
 
 export class TaskService {
   static async getAll(query: QueryTasksInput): Promise<Task[]> {
@@ -18,20 +17,20 @@ export class TaskService {
     const orderBy: any = {};
     orderBy[sortBy] = order;
 
-    return prisma.task.findMany({
+    return db.task.findMany({
       where,
       orderBy,
     });
   }
 
   static async getById(id: string): Promise<Task | null> {
-    return prisma.task.findUnique({
+    return db.task.findUnique({
       where: { id },
     });
   }
 
   static async create(data: CreateTaskInput): Promise<Task> {
-    return prisma.task.create({
+    return db.task.create({
       data: {
         title: data.title,
         description: data.description ?? null,
@@ -43,7 +42,7 @@ export class TaskService {
   }
 
   static async update(id: string, data: UpdateTaskInput): Promise<Task> {
-    return prisma.task.update({
+    return db.task.update({
       where: { id },
       data: {
         ...(data.title !== undefined && { title: data.title }),
@@ -56,7 +55,7 @@ export class TaskService {
   }
 
   static async delete(id: string): Promise<Task> {
-    return prisma.task.delete({
+    return db.task.delete({
       where: { id },
     });
   }

@@ -51,6 +51,11 @@ export const QueryTasksSchema = z.object({
   order: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
+export const ParamsIdSchema = z.object({
+  id: z.string().uuid('Invalid ID format. Must be a valid UUID.'),
+});
+
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
 export type QueryTasksInput = z.infer<typeof QueryTasksSchema>;
+export type ParamsIdInput = z.infer<typeof ParamsIdSchema>;

@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import type { Task, TaskStatus, TaskPriority, ToastMessage } from '../types';
-
-const API_BASE_URL = 'http://localhost:5000/api/tasks';
+import type { Task, TaskStatus, TaskPriority } from '../types';
+import { Button } from '../components/ui/Button';
+import { Label } from '../components/ui/Label';
+import { Input } from '../components/ui/Input';
+import { Textarea } from '../components/ui/Textarea';
+import { Select } from '../components/ui/Select';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
+import { taskService } from '../services/taskService';
 
 export const TaskFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,19 +23,7 @@ export const TaskFormPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const triggerToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const newToast: ToastMessage = {
-      id: Math.random().toString(36).substring(2, 9),
-      message,
-      type,
-    };
-    setToasts((prev) => [...prev, newToast]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
-    }, 3500);
-  }, []);
+  const { showToast } = useToast();
 
   // Fetch task if in Edit mode
   useEffect(() => {
@@ -39,35 +33,26 @@ export const TaskFormPage: React.FC = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`${API_BASE_URL}/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to retrieve task details.');
-        }
-        const result = await response.json();
-        if (result.success) {
-          const task: Task = result.data;
-          setTitle(task.title);
-          setDescription(task.description || '');
-          setStatus(task.status);
-          setPriority(task.priority);
-          if (task.dueDate) {
-            setDueDate(task.dueDate.split('T')[0]);
-          } else {
-            setDueDate('');
-          }
+        const task: Task = await taskService.getById(id);
+        setTitle(task.title);
+        setDescription(task.description || '');
+        setStatus(task.status);
+        setPriority(task.priority);
+        if (task.dueDate) {
+          setDueDate(task.dueDate.split('T')[0]);
         } else {
-          throw new Error(result.error || 'Server error.');
+          setDueDate('');
         }
       } catch (err: any) {
         setError(err.message || 'Error loading task data.');
-        triggerToast('Could not load task data.', 'error');
+        showToast('Could not load task data.', 'error');
       } finally {
         setLoading(false);
       }
     };
 
     fetchTask();
-  }, [id, isEditMode, triggerToast]);
+  }, [id, isEditMode, showToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,41 +83,26 @@ export const TaskFormPage: React.FC = () => {
     };
 
     try {
-      const url = isEditMode ? `${API_BASE_URL}/${id}` : API_BASE_URL;
-      const method = isEditMode ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (response.ok && result.success) {
-        triggerToast(isEditMode ? 'Task updated successfully!' : 'Task created successfully!', 'success');
-        // Wait a brief moment for user to see the success toast before redirecting
-        setTimeout(() => {
-          navigate('/');
-        }, 800);
+      if (isEditMode) {
+        await taskService.update(id, payload);
+        showToast('Task updated successfully!', 'success');
       } else {
-        const errorMsg = result.errors ? result.errors.map((e: any) => e.message).join(', ') : result.error;
-        setError(errorMsg || 'Failed to save task.');
-        triggerToast('Failed to save task.', 'error');
+        await taskService.create(payload);
+        showToast('Task created successfully!', 'success');
       }
-    } catch (err) {
-      setError('Network connection error.');
-      triggerToast('Network error during save.', 'error');
+      setTimeout(() => {
+        navigate('/');
+      }, 800);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save task.');
+      showToast(err.message || 'Failed to save task.', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-lg text-slate-500 dark:text-slate-400">Loading task details...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Retrieving task details..." />;
   }
 
   return (
@@ -157,13 +127,12 @@ export const TaskFormPage: React.FC = () => {
             )}
 
             <div className="mb-4">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-title">
-                Title *
-              </label>
-              <input
+              <Label htmlFor="task-title" required>
+                Title
+              </Label>
+              <Input
                 id="task-title"
                 type="text"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
                 placeholder="Enter task title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -173,12 +142,11 @@ export const TaskFormPage: React.FC = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-desc">
+              <Label htmlFor="task-desc">
                 Description
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 id="task-desc"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 resize-y min-h-[120px]"
                 placeholder="Enter detailed description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -188,55 +156,49 @@ export const TaskFormPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-status">
+                <Label htmlFor="task-status">
                   Status
-                </label>
-                <div className="relative">
-                  <select
-                    id="task-status"
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 cursor-pointer appearance-none"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                  >
-                    <option value="TODO">To Do</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="DONE">Completed</option>
-                  </select>
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 dark:text-slate-500 pointer-events-none">▼</span>
-                </div>
+                </Label>
+                <Select
+                  id="task-status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  options={[
+                    { value: 'TODO', label: 'To Do' },
+                    { value: 'IN_PROGRESS', label: 'In Progress' },
+                    { value: 'DONE', label: 'Completed' },
+                  ]}
+                />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-priority">
+                <Label htmlFor="task-priority">
                   Priority
-                </label>
-                <div className="relative">
-                  <select
-                    id="task-priority"
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 cursor-pointer appearance-none"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                  </select>
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 dark:text-slate-500 pointer-events-none">▼</span>
-                </div>
+                </Label>
+                <Select
+                  id="task-priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                  options={[
+                    { value: 'LOW', label: 'Low' },
+                    { value: 'MEDIUM', label: 'Medium' },
+                    { value: 'HIGH', label: 'High' },
+                  ]}
+                />
               </div>
             </div>
 
             <div className="mb-2 mt-4">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider" htmlFor="task-duedate">
+              <Label htmlFor="task-duedate">
                 Due Date
-              </label>
+              </Label>
               <div className="relative">
                 {/* Visible display input forcing DD-MM-YYYY */}
-                <input
+                <Input
                   type="text"
                   readOnly
                   placeholder="DD-MM-YYYY"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200 cursor-pointer pr-10"
+                  className="cursor-pointer pr-10"
                   value={dueDate ? dueDate.split('-').reverse().join('-') : ''}
                 />
                 {/* Calendar Icon Indicator overlay */}
@@ -265,38 +227,22 @@ export const TaskFormPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 dark:border-white/5 flex justify-end gap-3 bg-slate-50 dark:bg-black/10">
-            <Link to="/" className="px-5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 text-sm font-semibold text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/5 dark:text-slate-200 transition-all flex items-center justify-center">
-              Cancel
+          <div className="px-6 py-4 border-t border-slate-100 dark:border-white/5 flex justify-end gap-3 bg-slate-55 dark:bg-black/10">
+            <Link to="/">
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
             </Link>
-            <button 
+            <Button 
               type="submit" 
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold text-white shadow-md hover:shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50"
+              variant="primary"
+              isLoading={saving}
               disabled={saving}
             >
-              {saving ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Task'}
-            </button>
+              {isEditMode ? 'Save Changes' : 'Create Task'}
+            </Button>
           </div>
         </form>
-      </div>
-
-      {/* Toast Notification Feed */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
-        {toasts.map((toast) => (
-          <div 
-            key={toast.id} 
-            className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl rounded-xl p-4 flex items-center gap-3 min-w-[280px] animate-[slideInRight_0.25s_cubic-bezier(0.4,0,0.2,1)] border-l-4 ${
-              toast.type === 'success' ? 'border-l-emerald-500' : toast.type === 'error' ? 'border-l-rose-500' : 'border-l-indigo-500'
-            }`}
-          >
-            <span className={`text-base font-semibold ${
-              toast.type === 'success' ? 'text-emerald-500 dark:text-emerald-400' : toast.type === 'error' ? 'text-rose-500 dark:text-rose-400' : 'text-indigo-500 dark:text-indigo-400'
-            }`}>
-              {toast.type === 'success' ? '✔' : toast.type === 'error' ? '❌' : 'ℹ'}
-            </span>
-            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{toast.message}</span>
-          </div>
-        ))}
       </div>
     </div>
   );

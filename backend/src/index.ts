@@ -39,4 +39,4 @@ app.use(errorHandler);
 // Start Server
 app.listen(PORT, () => {
   Logger.info(`Server is running on port ${PORT}`, { port: PORT });
-});
+}); // restart trigger

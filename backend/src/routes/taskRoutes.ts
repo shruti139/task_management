@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { TaskController } from '../controllers/taskController';
-import { validateBody, validateQuery } from '../middleware/validate';
-import { CreateTaskSchema, UpdateTaskSchema, QueryTasksSchema } from '../utils/schemas';
+import { validateBody, validateQuery, validateParams } from '../middleware/validate';
+import { CreateTaskSchema, UpdateTaskSchema, QueryTasksSchema, ParamsIdSchema } from '../utils/schemas';
 
 const router = Router();
 
 router.get('/', validateQuery(QueryTasksSchema), TaskController.listTasks);
-router.get('/:id', TaskController.getTaskById);
+router.get('/:id', validateParams(ParamsIdSchema), TaskController.getTaskById);
 router.post('/', validateBody(CreateTaskSchema), TaskController.createTask);
-router.put('/:id', validateBody(UpdateTaskSchema), TaskController.updateTask);
-router.delete('/:id', TaskController.deleteTask);
+router.put('/:id', validateParams(ParamsIdSchema), validateBody(UpdateTaskSchema), TaskController.updateTask);
+router.delete('/:id', validateParams(ParamsIdSchema), TaskController.deleteTask);
 
 export default router;

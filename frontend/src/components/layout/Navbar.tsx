@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '../ui/Button';
 
 interface NavbarProps {
   theme: 'light' | 'dark';
@@ -19,16 +20,20 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme }) => {
           </Link>
           
           {/* Theme Toggle Button */}
-          <button
+          <Button
             onClick={onToggleTheme}
-            className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-sm transition-all cursor-pointer"
+            variant="secondary"
+            size="icon"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="w-9 h-9"
           >
             {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          </Button>
 
-          <Link to="/tasks/new" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-all shadow-sm hover:shadow-indigo-500/10 cursor-pointer">
-            ➕ New Task
+          <Link to="/tasks/new">
+            <Button variant="primary" size="xs">
+              ➕ New Task
+            </Button>
           </Link>
         </div>
       </div>
